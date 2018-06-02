@@ -56,7 +56,7 @@ namespace ServerApp.Controllers
 
                 var result = GetRange(range);
 
-                _logger.LogWarning($" #{count} - Download started at {DateTime.Now.TimeOfDay} from {result.Item1} ");
+                _logger.LogWarning($" #{count} - Download started at {DateTime.Now.TimeOfDay} from {result.Item1} = {HttpContext.Connection.Id} ");
             }
 
             var fileInfo = new FileInfo(path);
