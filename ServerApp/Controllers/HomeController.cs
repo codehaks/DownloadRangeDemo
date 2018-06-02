@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -43,19 +44,43 @@ namespace ServerApp.Controllers
         }
 
         [Route("range2")]
-        public IActionResult DownloadRange2()
+        public IActionResult DownloadRange2([FromServices] IMemoryCache memoryCache )
         {
+
             var range = HttpContext.Request.Headers["Range"];
 
             if (!string.IsNullOrEmpty(range))
             {
+                int count = 1;
+                count = ReadFromCache(memoryCache);
+
                 var result = GetRange(range);
 
-                _logger.LogWarning($"Range ---> Download started at {DateTime.Now.TimeOfDay} from {result.Item1} ");
+                _logger.LogWarning($" #{count} - Download started at {DateTime.Now.TimeOfDay} from {result.Item1} ");
             }
 
             var fileInfo = new FileInfo(path);
             return PhysicalFile(path, mediaType, "DownloadRang.zip", true);
+        }
+
+        private static int ReadFromCache(IMemoryCache memoryCache)
+        {
+            var cacheExists = memoryCache.TryGetValue("count", out int count);
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromSeconds(10));
+
+            if (cacheExists)
+            {
+                count++;
+                memoryCache.Set("count", count, cacheEntryOptions);
+            }
+            else
+            {
+                memoryCache.Set("count", 1, cacheEntryOptions);
+                count = 1;
+            }
+
+            return count;
         }
 
         private Tuple<long, long> GetRange(string range)
